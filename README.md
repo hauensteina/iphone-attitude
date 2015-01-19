@@ -1,5 +1,5 @@
 # iphone-attitude
-Get iphone position in space, animate on Mac with SceneKit.
+Get iPhone position in space, animate on Mac with SceneKit.
 
 # Purpose
 Shows how sensor fusion built into iOS (CMMotionManager) is used to 
