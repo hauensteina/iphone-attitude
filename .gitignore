@@ -1,0 +1,14 @@
+*.ipa
+*.zip
+*.xcodeproj/xcuserdata
+*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+*.xcodeproj/project.xcworkspace/xcshareddata/*.xccheckout
+*.xcodeproj/project.xcworkspace/xcuserdata
+*.bak
+Scripts/libgdx
+.api_token
+RELEASE.notes
+build
+DerivedData
+.DS_Store
+
