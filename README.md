@@ -23,7 +23,7 @@ There are two applications:
 2. model3d
 
   A Mac app that will display an iPhone in 3D and move it around
-  according to the quaternion info it receives on port 2718.
+  according to the info it receives on port 2718.
 
 You can see what this project does [here](http://youtu.be/FmJ4iZ52Yxg).
 
