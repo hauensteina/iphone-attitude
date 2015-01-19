@@ -8,6 +8,9 @@ demonstrates how to use SceneKit to build a simple model of an iPhone and
 animate it in 3D based on quaternions. Socket based TCP-IP communication
 (CFStream) is used to pass data from the phone to the Mac.
 
+Because CMMotionManager generates quaternions, and SceneKit accepts quaternions,
+it all boils down to a glorified pipe.
+
 # Details
 There are two applications:
 
