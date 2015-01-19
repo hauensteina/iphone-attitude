@@ -3,9 +3,9 @@ Get iPhone position in space, animate on Mac with SceneKit.
 
 # Purpose
 Shows how sensor fusion built into iOS (CMMotionManager) is used to 
-determine the iPhone attitude in space as a quaternion. Also 
+determine the iPhone attitude in space. Also 
 demonstrates how to use SceneKit to build a simple model of an iPhone and 
-animate it in 3D based on quaternions. Socket based TCP-IP communication
+animate it in 3D. Socket based TCP-IP communication
 (CFStream) is used to pass data from the phone to the Mac.
 
 Because CMMotionManager generates quaternions, and SceneKit accepts quaternions,
@@ -25,5 +25,6 @@ There are two applications:
   A Mac app that will display an iPhone in 3D and move it around
   according to the quaternion info it receives on port 2718.
 
+You can see what this project does [here](http://youtu.be/FmJ4iZ52Yxg).
 
 
