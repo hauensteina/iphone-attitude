@@ -10,6 +10,15 @@
 #import <CoreMotion/CMMotionManager.h>
 #import <math.h>
 
+#define DEG(x) ((x)*(180.0/M_PI))
+#define RAD(x) ((x)*(M_PI/180.0))
+
+// A 3D rotation matrix
+typedef struct matrix {
+    float m[3][3];
+} Matrix;
+
+
 // Streams for socket communication with server
 CFReadStreamRef mReadStream = nil;
 CFWriteStreamRef mWriteStream = nil;
@@ -18,12 +27,37 @@ NSOutputStream *mOStream = nil;
 
 @interface MainVC ()
 
-// IB Stuff
+// Labels and Textfields
+//--------------------------
+
+// Quaternion from MotionManager
+@property (weak, nonatomic) IBOutlet UILabel *lbAngle;
 @property (weak, nonatomic) IBOutlet UILabel *lbx;
 @property (weak, nonatomic) IBOutlet UILabel *lby;
 @property (weak, nonatomic) IBOutlet UILabel *lbz;
-@property (weak, nonatomic) IBOutlet UILabel *lbAngle;
 
+// Quaternion from Acceleration
+@property (weak, nonatomic) IBOutlet UILabel *lbAngleA;
+@property (weak, nonatomic) IBOutlet UILabel *lbXA;
+@property (weak, nonatomic) IBOutlet UILabel *lbYA;
+@property (weak, nonatomic) IBOutlet UILabel *lbZA;
+
+// User Acceleration (motion)
+@property (weak, nonatomic) IBOutlet UILabel *lbUsrAccX;
+@property (weak, nonatomic) IBOutlet UILabel *lbUsrAccY;
+@property (weak, nonatomic) IBOutlet UILabel *lbUsrAccZ;
+
+// Gravity (static)
+@property (weak, nonatomic) IBOutlet UILabel *lbGravX;
+@property (weak, nonatomic) IBOutlet UILabel *lbGravY;
+@property (weak, nonatomic) IBOutlet UILabel *lbGravZ;
+
+// Sum grav + user
+@property (weak, nonatomic) IBOutlet UILabel *lbTotX;
+@property (weak, nonatomic) IBOutlet UILabel *lbTotY;
+@property (weak, nonatomic) IBOutlet UILabel *lbTotZ;
+
+// Server Connection info
 @property (weak, nonatomic) IBOutlet UITextField *txtIPA;
 @property (weak, nonatomic) IBOutlet UITextField *txtIPB;
 @property (weak, nonatomic) IBOutlet UITextField *txtIPC;
@@ -32,18 +66,22 @@ NSOutputStream *mOStream = nil;
 
 @property (weak, nonatomic) IBOutlet UIButton *btnLED;
 
+@property (weak, nonatomic) IBOutlet UIButton *btnLEDFusion;
+@property (weak, nonatomic) IBOutlet UIButton *btnLEDGravity;
+@property (weak, nonatomic) IBOutlet UIButton *btnLEDAccelerometer;
 
 // Motion stuff
+//--------------
+
 @property NSOperationQueue *deviceQueue;
 @property CMMotionManager *motionManager;
-@property float x;
-@property float y;
-@property float z;
-@property float angle;
 
 // Other
+//-------
+
 @property NSTimer *connectTimeout;
 @property BOOL isConnected;
+@property enum {USE_FUSION, USE_GRAVITY, USE_ACCELEROMETER} mode;
 
 @end
 
@@ -56,6 +94,9 @@ NSOutputStream *mOStream = nil;
 //---------------------
 {
     [super viewDidLoad];
+    
+    _mode = USE_FUSION;
+    
     _lbx.text = @"0";
     _lby.text = @"0";
     _lbz.text = @"0";
@@ -68,7 +109,7 @@ NSOutputStream *mOStream = nil;
     [_txtIPD setDelegate:self];
     [_txtPort setDelegate:self];
     [self initIP];
-    
+        
     // Motion manager
     _deviceQueue = [[NSOperationQueue alloc] init];
     _motionManager = [CMMotionManager new];
@@ -85,25 +126,94 @@ NSOutputStream *mOStream = nil;
                  float theta_rad = 2.0 * acos(q.w);
                  float theta_deg = theta_rad * (180.0 / M_PI);
                  float sin_theta_2 = sin (theta_rad / 2.0);
-                 float x = q.x / sin_theta_2;
-                 float y = q.y / sin_theta_2;
-                 float z = q.z / sin_theta_2;
+                 float qx = q.x / sin_theta_2;
+                 float qy = q.y / sin_theta_2;
+                 float qz = q.z / sin_theta_2;
                  // Norm the vector to 1.0
                  //float vlen = sqrt (x*x+y*y+z*z);
                  //x /= vlen; y /= vlen; z /= vlen;
                  
-                 _lbx.text = nsprintf(@"%.2f", x);
-                 _lby.text = nsprintf(@"%.2f", y);
-                 _lbz.text = nsprintf(@"%.2f", z);
-                 _lbAngle.text = nsprintf (@"%.2f", theta_deg);
+                 CMAcceleration userAcc;
+                 userAcc.x = -m.userAcceleration.x;
+                 userAcc.y = -m.userAcceleration.y;
+                 userAcc.z = -m.userAcceleration.z;
+
+                 CMAcceleration gravity;
+                 gravity.x = -m.gravity.x;
+                 gravity.y = -m.gravity.z;
+                 gravity.z = -m.gravity.y;
+
+                 CMAcceleration totAcc;
+                 totAcc.x = userAcc.x + gravity.x;
+                 totAcc.y = userAcc.y + gravity.y;
+                 totAcc.z = userAcc.z + gravity.z;
+                 
+                 _lbx.text = nsprintf (@"%.2f", qx);
+                 _lby.text = nsprintf (@"%.2f", qy);
+                 _lbz.text = nsprintf (@"%.2f", qz);
+                 _lbAngle.text = nsprintf (@"%.0f", theta_deg);
+                 
+                 _lbUsrAccX.text = nsprintf (@"%.2f", userAcc.x);
+                 _lbUsrAccY.text = nsprintf (@"%.2f", userAcc.y);
+                 _lbUsrAccZ.text = nsprintf (@"%.2f", userAcc.z);
+                 
+                 _lbGravX.text = nsprintf (@"%.2f", gravity.x);
+                 _lbGravY.text = nsprintf (@"%.2f", gravity.y);
+                 _lbGravZ.text = nsprintf (@"%.2f", gravity.z);
+                 
+                 _lbTotX.text = nsprintf (@"%.2f", totAcc.x);
+                 _lbTotY.text = nsprintf (@"%.2f", totAcc.y);
+                 _lbTotZ.text = nsprintf (@"%.2f", totAcc.z);
+                 
+
+                 float x0,y0,z0;
+                 if (_mode == USE_ACCELEROMETER) {
+                     // Total accelerometer (dirty)
+                     x0 = totAcc.x;
+                     y0 = totAcc.y;
+                     z0 = totAcc.z;
+                 } else {
+                     // Motion filtered out, clean attitude
+                     x0 = gravity.x;
+                     y0 = gravity.y;
+                     z0 = gravity.z;
+                 }
+                 
+                 float x,y,z;
+                 x=x0; y=z0; z=y0;
+                 
+#define BOUND(x,a,b) { if ((x) > (b)) (x) = (b); if ((x) < (a)) (x) = (a); }
+                 BOUND(x,-1,1); BOUND(y,-1,1); BOUND(z,-1,1);
+                 
+                 // Cross product gives rot axis
+                 float x2 = 0; float y2 = 0; float z2 = -1;
+                 float xc = y*z2 - y2*z;
+                 float yc = z*x2 - z2*x;
+                 float zc = x*y2 - x2*y;
+                 // Norm it
+                 float lenc = sqrt(xc*xc + yc*yc + zc*zc);
+                 xc /= lenc;
+                 yc /= lenc;
+                 zc /= lenc;
+                 float omega = -acos(z);
+                 // Quaternion from (x,y,z) gravity
+                 _lbXA.text = nsprintf (@"%.2f", xc);
+                 _lbYA.text = nsprintf (@"%.2f", yc);
+                 _lbZA.text = nsprintf (@"%.2f", zc);
+                 _lbAngleA.text = nsprintf (@"%.0f", DEG(omega));
                  
                  if (_isConnected) {
-                     NSString *msg = nsprintf (@"%.4f,%.4f,%.4f,%.4f\n",theta_rad,x,y,z);
+                     NSString *msg;
+                     if (_mode == USE_FUSION) {
+                         msg = nsprintf (@"%.4f,%.4f,%.4f,%.4f\n",theta_rad,qx,qy,qz);
+                     } else {
+                         msg = nsprintf (@"%.4f,%.4f,%.4f,%.4f\n", omega, xc,yc,zc);
+                     }
                      [self write2server:msg];
                  }
-            }];
-         }];
-    }
+             }]; // addOperationWithBlock
+         }]; // motionmanager
+    } // if (motion available)
 } // viewDidLoad()
 
 
@@ -166,6 +276,26 @@ NSOutputStream *mOStream = nil;
     [self btnConnect:sender];
 }
 
+//-------------------------------------
+- (IBAction)btnLEDFusion:(id)sender
+//-------------------------------------
+{
+    [self ledFusion];
+}
+
+//-------------------------------------
+- (IBAction)btnLEDGravity:(id)sender
+//-------------------------------------
+{
+    [self ledGravity];
+}
+
+//-------------------------------------
+- (IBAction)btnLEDAccelerometer:(id)sender
+//-------------------------------------
+{
+    [self ledAccelerometer];
+}
 
 #pragma mark IP Address
 
@@ -284,6 +414,40 @@ NSOutputStream *mOStream = nil;
     _isConnected = NO;
 }
 
+//--------------------
+- (void) ledFusion
+//--------------------
+{
+    UIImage *blackLED = [UIImage imageNamed:@"black-led-off-md.png"];
+    UIImage *grayLED = [UIImage imageNamed:@"grey-led-md.png"];
+    [_btnLEDFusion setImage:blackLED forState:UIControlStateNormal];
+    [_btnLEDGravity setImage:grayLED forState:UIControlStateNormal];
+    [_btnLEDAccelerometer setImage:grayLED forState:UIControlStateNormal];
+    _mode = USE_FUSION;
+}
+//--------------------
+- (void) ledGravity
+//--------------------
+{
+    UIImage *blackLED = [UIImage imageNamed:@"black-led-off-md.png"];
+    UIImage *grayLED = [UIImage imageNamed:@"grey-led-md.png"];
+    [_btnLEDFusion setImage:grayLED forState:UIControlStateNormal];
+    [_btnLEDGravity setImage:blackLED forState:UIControlStateNormal];
+    [_btnLEDAccelerometer setImage:grayLED forState:UIControlStateNormal];
+    _mode = USE_GRAVITY;
+}
+//-------------------------
+- (void) ledAccelerometer
+//-------------------------
+{
+    UIImage *blackLED = [UIImage imageNamed:@"black-led-off-md.png"];
+    UIImage *grayLED = [UIImage imageNamed:@"grey-led-md.png"];
+    [_btnLEDFusion setImage:grayLED forState:UIControlStateNormal];
+    [_btnLEDGravity setImage:grayLED forState:UIControlStateNormal];
+    [_btnLEDAccelerometer setImage:blackLED forState:UIControlStateNormal];
+    _mode = USE_ACCELEROMETER;
+}
+
 // Disconnect from server
 //--------------------------
 - (void)disconnectServer
@@ -354,7 +518,7 @@ NSOutputStream *mOStream = nil;
             break;
         }
         case NSStreamEventHasSpaceAvailable: {
-            NSLog (@"NSStreamEventHasSpaceAvailable");
+            //NSLog (@"NSStreamEventHasSpaceAvailable");
             break;
         }
         case NSStreamEventEndEncountered: {
@@ -422,9 +586,122 @@ NSOutputStream *mOStream = nil;
 
 #pragma  mark C Funcs
 
-//----------------------------
+#define RLOOP(N) for(r=0;r<(N);r++)
+#define CLOOP(N) for(c=0;c<(N);c++)
+#define SIGN(x) ((x)>=0?1:-1)
+
+
+//---------------------------------
+CMQuaternion rot2quat (Matrix *p_m)
+//---------------------------------
+// Make a quaternion from a rot matrix.
+// This is a little messy for numeric stability.
+// (by Martin Baker on euklideanspace.com)
+{
+    float (*m)[3];
+    m = p_m->m; //  m[1][2] == p_m->m[1][2]
+    CMQuaternion res;
+    
+    float tr = m[0][0] + m[1][1] + m[2][2];
+    
+    if (tr > 0) {
+        float S = sqrt(tr+1.0) * 2; // S=4*qw
+        res.w = 0.25 * S;
+        res.x = (m[2][1] - m[1][2]) / S;
+        res.y = (m[0][2] - m[2][0]) / S;
+        res.z = (m[1][0] - m[0][1]) / S;
+    } else if ((m[0][0] > m[1][1])&(m[0][0] > m[2][2])) {
+        float S = sqrt(1.0 + m[0][0] - m[1][1] - m[2][2]) * 2; // S=4*qx
+        res.w = (m[2][1] - m[1][2]) / S;
+        res.x = 0.25 * S;
+        res.y = (m[0][1] + m[1][0]) / S;
+        res.z = (m[0][2] + m[2][0]) / S;
+    } else if (m[1][1] > m[2][2]) {
+        float S = sqrt(1.0 + m[1][1] - m[0][0] - m[2][2]) * 2; // S=4*qy
+        res.w = (m[0][2] - m[2][0]) / S;
+        res.x = (m[0][1] + m[1][0]) / S;
+        res.y = 0.25 * S;
+        res.z = (m[1][2] + m[2][1]) / S;
+    } else {
+        float S = sqrt(1.0 + m[2][2] - m[0][0] - m[1][1]) * 2; // S=4*qz
+        res.w = (m[1][0] - m[0][1]) / S;
+        res.x = (m[0][2] + m[2][0]) / S;
+        res.y = (m[1][2] + m[2][1]) / S;
+        res.z = 0.25 * S;
+    }
+    return res;
+} // rot2quat
+
+// Transpose a matrix
+//-----------------------------------------
+void transpose (Matrix *p_m, Matrix *p_res)
+//-----------------------------------------
+{
+    if(p_m == NULL) return;
+    
+    int r,c;
+    RLOOP(3) {
+        CLOOP(3) {
+            p_res->m[c][r] = p_m->m[r][c];
+        }
+    }
+} // transpose()
+
+// Multiply two 3x3 matrices
+//-----------------------------------------------------
+void matmul (Matrix *p_m1, Matrix *p_m2, Matrix *p_res)
+//-----------------------------------------------------
+{
+    if(p_m1 == NULL || p_m2 == NULL) return;
+    
+    int r,c;
+    Matrix m2;
+    transpose(p_m2,&m2);
+    RLOOP(3) {
+        CLOOP(3) {
+            float *r1 = p_m1->m[r];
+            float *r2 = m2.m[c];
+            p_res->m[r][c] = r1[0]*r2[0] + r1[1]*r2[1] + r1[2]*r2[2];
+        } // CLOOP
+    } // RLOOP
+} // matmul()
+
+// Return a pointer to a rotation matrix aligning a vector
+// with the y axis.
+//-----------------------------------------------
+Matrix *alignVector (float x, float y,float z)
+//-----------------------------------------------
+{
+    static Matrix res;
+    Matrix zrot;
+    Matrix xrot;
+    if (ABS(x) < 0.001) { x = 0.001; }
+    if (ABS(y) < 0.001) { y = 0.001; }
+    float xyLength = sqrt(x*(float)x + y*(float)y);
+    
+    float zAngle = SIGN(x) * (xyLength==0?0:acos(y/xyLength));
+    
+    float vecLength = sqrt(x*(float)x + y*(float)y + z*(float)z);
+    
+    float xAngle = -SIGN(z) * acos (xyLength / vecLength);
+    
+    // Rotation around z axis
+    zrot.m[0][0] = cos(zAngle); zrot.m[0][1] =-sin(zAngle); zrot.m[0][2] = 0;
+    zrot.m[1][0] = sin(zAngle); zrot.m[1][1] = cos(zAngle); zrot.m[1][2] = 0;
+    zrot.m[2][0] = 0;           zrot.m[2][1] = 0;           zrot.m[2][2] = 1;
+    
+    // Rotation around x axis
+    xrot.m[0][0] = 1; xrot.m[0][1] = 0;           xrot.m[0][2] = 0;
+    xrot.m[1][0] = 0; xrot.m[1][1] = cos(xAngle); xrot.m[1][2] = -sin(xAngle);
+    xrot.m[2][0] = 0; xrot.m[2][1] = sin(xAngle); xrot.m[2][2] = cos(xAngle);
+    
+    matmul (&xrot,&zrot,&res);
+    return &res;
+} // alignVector()
+
+//------------------------------------------
 NSString *nsprintf (NSString *format, ...)
-//----------------------------
+//------------------------------------------
 {
     va_list args;
     va_start(args, format);

@@ -5,16 +5,16 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>46FADCA3-3DE8-4BD7-9759-34E9E61CBA6B</string>
+	<string>D8157572-0ED9-4C6E-B8A4-D929C40C4C7D</string>
 	<key>IDESourceControlProjectName</key>
-	<string>model3d</string>
+	<string>attitude</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>2D4F2153F8AA42BB663FEB3C148F035E9886A98B</key>
 		<string>https://github.com/hauensteina/iphone-attitude</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>model3d/model3d.xcodeproj</string>
+	<string>attitude/attitude.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>2D4F2153F8AA42BB663FEB3C148F035E9886A98B</key>

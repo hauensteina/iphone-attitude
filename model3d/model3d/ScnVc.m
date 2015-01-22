@@ -55,17 +55,18 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     //======================================
     SCNView *sceneView = (SCNView *) self.view;
     sceneView.backgroundColor = [NSColor grayColor];
-    //sceneView.allowsCameraControl = true;
+    sceneView.allowsCameraControl = true;
 
     // Create the scene and get the root
     sceneView.scene = [SCNScene scene];
     SCNNode *root = sceneView.scene.rootNode;
     
     // Create the brick geometry and node
-    SCNBox *brickGeom = [SCNBox boxWithWidth:2.2
-                                      height:0.1
-                                      length:1.0 // depth, really
-                               chamferRadius:0.05];
+    SCNBox *brickGeom = [SCNBox
+                         boxWithWidth:2.2
+                         height:0.1
+                         length:1.0
+                         chamferRadius:0.05];
     _brickNode = [SCNNode nodeWithGeometry:brickGeom];
     
     NSColor *c1 = RGB (0x6a7dc1);

@@ -30,6 +30,8 @@
 		ACD0DB381A6D9C5F0038E94D /* Icon-80.png in Resources */ = {isa = PBXBuildFile; fileRef = ACD0DB2E1A6D9C5F0038E94D /* Icon-80.png */; };
 		ACD0DB391A6D9C5F0038E94D /* Icon-114.png in Resources */ = {isa = PBXBuildFile; fileRef = ACD0DB2F1A6D9C5F0038E94D /* Icon-114.png */; };
 		ACD0DB3A1A6D9C5F0038E94D /* Icon-144.png in Resources */ = {isa = PBXBuildFile; fileRef = ACD0DB301A6D9C5F0038E94D /* Icon-144.png */; };
+		ACF272091A71A95600595091 /* black-led-off-md.png in Resources */ = {isa = PBXBuildFile; fileRef = ACF272071A71A95600595091 /* black-led-off-md.png */; };
+		ACF2720A1A71A95600595091 /* grey-led-md.png in Resources */ = {isa = PBXBuildFile; fileRef = ACF272081A71A95600595091 /* grey-led-md.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +74,8 @@
 		ACD0DB2E1A6D9C5F0038E94D /* Icon-80.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-80.png"; sourceTree = "<group>"; };
 		ACD0DB2F1A6D9C5F0038E94D /* Icon-114.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-114.png"; sourceTree = "<group>"; };
 		ACD0DB301A6D9C5F0038E94D /* Icon-144.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-144.png"; sourceTree = "<group>"; };
+		ACF272071A71A95600595091 /* black-led-off-md.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "black-led-off-md.png"; sourceTree = "<group>"; };
+		ACF272081A71A95600595091 /* grey-led-md.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grey-led-md.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +123,8 @@
 				ACA4403C1A68A2CE009C30C0 /* amber-led-on-md.png */,
 				ACA4402C1A66E3DB009C30C0 /* green-led-on-md.png */,
 				ACA4402D1A66E3DB009C30C0 /* led-red-control-md.png */,
+				ACF272081A71A95600595091 /* grey-led-md.png */,
+				ACF272071A71A95600595091 /* black-led-off-md.png */,
 				ACA43FFD1A65C4C2009C30C0 /* AppDelegate.h */,
 				ACA43FFE1A65C4C2009C30C0 /* AppDelegate.m */,
 				ACA43FF91A65C4C2009C30C0 /* Supporting Files */,
@@ -259,6 +265,7 @@
 				ACD0DB251A6D9B3B0038E94D /* Icon-120.png in Resources */,
 				ACD0DB1B1A6D92D60038E94D /* attitude.png in Resources */,
 				ACA4402E1A66E3DB009C30C0 /* green-led-on-md.png in Resources */,
+				ACF272091A71A95600595091 /* black-led-off-md.png in Resources */,
 				ACA440231A65C683009C30C0 /* MainVC.xib in Resources */,
 				ACD0DB361A6D9C5F0038E94D /* Icon-60.png in Resources */,
 				ACD0DB241A6D9B3B0038E94D /* Icon-76.png in Resources */,
@@ -270,6 +277,7 @@
 				ACD0DB321A6D9C5F0038E94D /* Icon-29.png in Resources */,
 				ACD0DB331A6D9C5F0038E94D /* Icon-40.png in Resources */,
 				ACD0DB261A6D9B3B0038E94D /* Icon-152.png in Resources */,
+				ACF2720A1A71A95600595091 /* grey-led-md.png in Resources */,
 				ACD0DB371A6D9C5F0038E94D /* Icon-72.png in Resources */,
 				ACD0DB381A6D9C5F0038E94D /* Icon-80.png in Resources */,
 				ACD0DB271A6D9B3B0038E94D /* Icon-180.png in Resources */,
