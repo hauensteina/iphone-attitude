@@ -679,7 +679,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="335" y="390" width="665" height="644"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1080" height="1898"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1200" height="1578"/>
             <view key="contentView" id="EiT-Mj-1SZ">
                 <rect key="frame" x="0.0" y="0.0" width="665" height="644"/>
                 <autoresizingMask key="autoresizingMask"/>
@@ -724,6 +724,16 @@
                             <action selector="btnto10045:" target="oOS-Cd-vJs" id="ESw-Jh-ih6"/>
                         </connections>
                     </button>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xze-FC-Ra9">
+                        <rect key="frame" x="313" y="81" width="140" height="32"/>
+                        <buttonCell key="cell" type="push" title="Corr" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="BKh-3o-WLa">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="btnCorr:" target="oOS-Cd-vJs" id="K9y-xR-67x"/>
+                        </connections>
+                    </button>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qnr-Jb-NTH">
                         <rect key="frame" x="168" y="57" width="28" height="17"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="IP:" id="fOv-Va-3Kt">
@@ -761,7 +771,7 @@
                     </customView>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="376.5" y="58"/>
+            <point key="canvasLocation" x="336.5" y="109"/>
         </window>
     </objects>
 </document>

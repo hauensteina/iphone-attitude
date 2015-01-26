@@ -16,6 +16,10 @@
 
 #define MYPORT 2718
 
+#define DEG(x) ((x)*(180.0/M_PI))
+#define RAD(x) ((x)*(M_PI/180.0))
+
+
 #define APP ((AppDelegate*) [NSApplication sharedApplication].delegate)
 
 #define RGB(rgbValue) [NSColor \
@@ -31,6 +35,7 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 @property (weak) IBOutlet NSTextField *lbPort;
 
 @property SCNNode *brickNode;
+@property float corrAngle;
 
 // Socket stuff
 @property CFSocketRef socket;
@@ -55,11 +60,22 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     //======================================
     SCNView *sceneView = (SCNView *) self.view;
     sceneView.backgroundColor = [NSColor grayColor];
-    sceneView.allowsCameraControl = true;
+    //sceneView.allowsCameraControl = true;
 
     // Create the scene and get the root
     sceneView.scene = [SCNScene scene];
     SCNNode *root = sceneView.scene.rootNode;
+    
+//    // camera
+//    SCNCamera *camera = [SCNCamera new];
+//    camera.xFov = 40;
+//    camera.yFov = 40;
+//    
+//    _cameraNode = [SCNNode new];
+//    _cameraNode.camera = camera;
+//    _cameraNode.position = SCNVector3Make(0,0,4);
+//    
+//    [root addChildNode:_cameraNode];
     
     // Create the brick geometry and node
     SCNBox *brickGeom = [SCNBox
@@ -114,10 +130,10 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 //--------------------------------
 // Rotate by 45 degrees around x-axis
 {
-    if ([_sockistream hasBytesAvailable]) {
-        char buf[1000];
-        [_sockistream read:(uint8_t*)buf maxLength:1000];
-    }
+//    if ([_sockistream hasBytesAvailable]) {
+//        char buf[1000];
+//        [_sockistream read:(uint8_t*)buf maxLength:1000];
+//    }
     // Rotation before
     SCNQuaternion ori = self.brickNode.rotation;
     // Change in rotation
@@ -126,6 +142,7 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     SCNQuaternion newOri = SCNQuaternionMultiply (ori, rot);
     // Without this, the brick will snap back at the end of animation
     _brickNode.rotation = newOri;
+    NSLog (@"axyz: %.2f, %.2f, %.2f, %.2f",DEG(newOri.w),newOri.x,newOri.y,newOri.z);
 } // btn10045
 
 //-------------------------------------
@@ -137,6 +154,7 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     SCNQuaternion rot = SCNVector4Make (0, 1, 0, M_PI/4.0);
     SCNQuaternion newOri = SCNQuaternionMultiply (ori, rot);
     _brickNode.rotation = newOri;
+    NSLog (@"axyz: %.2f, %.2f, %.2f, %.2f",DEG(newOri.w),newOri.x,newOri.y,newOri.z);
 }
 
 //-------------------------------------
@@ -148,6 +166,7 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     SCNQuaternion rot = SCNVector4Make (0, 0, 1, M_PI/4.0);
     SCNQuaternion newOri = SCNQuaternionMultiply (ori, rot);
     _brickNode.rotation = newOri;
+    NSLog (@"axyz: %.2f, %.2f, %.2f, %.2f",DEG(newOri.w),newOri.x,newOri.y,newOri.z);
 }
 
 //-------------------------------------
@@ -155,8 +174,18 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 //-------------------------------------
 // Absolute rotation to 1,0,0,45 orientation
 {
-    SCNQuaternion newOri = SCNVector4Make (1, 0, 0, M_PI/4.0);
+    //SCNQuaternion newOri = SCNVector4Make (1, 0, 0, M_PI/4.0);
+    SCNQuaternion newOri = SCNVector4Make (1, 1, 0,M_PI);
     _brickNode.rotation = newOri;
+}
+
+//------------------------------
+- (IBAction)btnCorr:(id)sender
+//------------------------------
+{
+    float rot = DEG(eulerPhi(_brickNode.rotation)) - _corrAngle;
+    _corrAngle = 90.0 - rot;
+ //   _corrAngle += 5.0;
 }
 
 #pragma mark UI stuff
@@ -337,13 +366,23 @@ static void handleSocketConnect (CFSocketRef socket
         //SCNQuaternion newOri = SCNVector4Make (x, y, z, theta);
         //SCNQuaternion newOri = SCNVector4Make (x, z, y, theta);
 //        SCNQuaternion newOri = SCNVector4Make (y, x, z, theta);
-        SCNQuaternion newOri = SCNVector4Make (y, z, x, theta);
-//        SCNQuaternion newOri = SCNVector4Make (z, x, y, theta);
-//        SCNQuaternion newOri = SCNVector4Make (z, y, x, theta);
-        _brickNode.rotation = newOri;
+        SCNQuaternion newOri = SCNQuaternionNorm (SCNVector4Make (y, z, x, theta));
+        _brickNode.rotation = [self correct:newOri];
+        //NSLog(@"axyz: %.2f, %.2f, %.2f, %.2f",DEG(newOri.w),newOri.x,newOri.y,newOri.z);
+//        NSLog(@"ftp: %.2f, %.2f, %.2f"
+//              ,DEG(eulerPhi(_brickNode.rotation))
+//              ,DEG(eulerTheta(_brickNode.rotation))
+//              ,DEG(eulerPsi(_brickNode.rotation)));
     }
-    
 } // handleClientMessage
+
+//-------------------------------------------------
+- (SCNQuaternion) correct:(SCNQuaternion) ori
+//-------------------------------------------------
+{
+    SCNQuaternion corr = SCNVector4Make (0, 1, 0, RAD(_corrAngle));
+    return SCNQuaternionMultiply (corr,ori);
+} // correct
 
 // Stream events from client. _sockistream uses this method as callback.
 //------------------------------------------------------------------------
@@ -415,12 +454,42 @@ SCNQuaternion SCNQuaternionMultiply (SCNQuaternion q1, SCNQuaternion q2)
 {
     GLKQuaternion q1glk = // turn q1 into a GLKQuaternion
     GLKQuaternionMakeWithAngleAndAxis (q1.w, q1.x, q1.y, q1.z);
+    q1glk = GLKQuaternionNormalize (q1glk);
     GLKQuaternion q2glk = // turn q2 into a GLKQuaternion
     GLKQuaternionMakeWithAngleAndAxis (q2.w, q2.x, q2.y, q2.z);
+    q2glk = GLKQuaternionNormalize (q2glk);
     GLKQuaternion resglk = GLKQuaternionMultiply (q1glk, q2glk);
-    // Convert back to SCNQuaternion
-    GLKVector3 axis = GLKQuaternionAxis (resglk);
-    float angle = GLKQuaternionAngle (resglk);
+    return glk2SCN (resglk);
+}
+
+//-----------------------------------------------------------------------
+SCNQuaternion SCNQuaternionInvert (SCNQuaternion q)
+//-----------------------------------------------------------------------
+// Multiply two quaternions. This applies rotation q2 to rotation q1.
+{
+    GLKQuaternion qglk = GLKQuaternionMakeWithAngleAndAxis (q.w, q.x, q.y, q.z);
+    //qglk = GLKQuaternionNormalize (qglk);
+    GLKQuaternion resglk = GLKQuaternionInvert (qglk);
+    return glk2SCN (resglk);
+}
+
+//-----------------------------------------------------------------------
+SCNQuaternion SCNQuaternionNorm (SCNQuaternion q)
+//-----------------------------------------------------------------------
+// Norm an SCNQuaternion
+{
+    float len = sqrt (q.x*q.x + q.y*q.y + q.z*q.z);
+    q.x /= len; q.y /= len; q.z /= len;
+    return q;
+}
+
+//-----------------------------------------------------------------------
+SCNQuaternion glk2SCN (GLKQuaternion qglk)
+//-----------------------------------------------------------------------
+// Make a SCNQuaternion from a GLKQuaternion
+{
+    GLKVector3 axis = GLKQuaternionAxis (qglk);
+    float angle = GLKQuaternionAngle (qglk);
     SCNQuaternion res = SCNVector4Make (axis.x, axis.y, axis.z, angle);
     return res;
 }
@@ -446,6 +515,49 @@ BOOL strmatch (NSString *str, NSString *pat)
     NSTextCheckingResult *match =
     [re firstMatchInString:str options:0 range:NSMakeRange(0, [str length])];
     return [match numberOfRanges]?YES:NO;
+}
+
+//-----------------------------------
+float eulerPhi (SCNQuaternion p_q)
+//-----------------------------------
+{
+    GLKQuaternion q =
+    GLKQuaternionMakeWithAngleAndAxis (p_q.w, p_q.x, p_q.y, p_q.z);
+    float q0 = q.w;
+    float q1 = q.x;
+    float q2 = q.y;
+    float q3 = q.z;
+    float res =
+    atan2 (2.0 * (q0*q1+q2*q3), 1.0 - 2.0 * (q1*q1+q2*q2));
+    return res;
+}
+//-----------------------------------
+float eulerTheta (SCNQuaternion p_q)
+//-----------------------------------
+{
+    GLKQuaternion q =
+    GLKQuaternionMakeWithAngleAndAxis (p_q.w, p_q.x, p_q.y, p_q.z);
+    float q0 = q.w;
+    float q1 = q.x;
+    float q2 = q.y;
+    float q3 = q.z;
+    float res =
+    asin (2.0 * (q0*q2-q3*q1));
+    return res;
+}
+//-----------------------------------
+float eulerPsi (SCNQuaternion p_q)
+//-----------------------------------
+{
+    GLKQuaternion q =
+    GLKQuaternionMakeWithAngleAndAxis (p_q.w, p_q.x, p_q.y, p_q.z);
+    float q0 = q.w;
+    float q1 = q.x;
+    float q2 = q.y;
+    float q3 = q.z;
+    float res =
+    atan2 (2.0 * (q0*q3+q1*q2), 1.0 - 2.0 * (q2*q2+q3*q3));
+    return res;
 }
 
 //-----------------

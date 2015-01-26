@@ -116,8 +116,10 @@ NSOutputStream *mOStream = nil;
     if (_motionManager.isDeviceMotionAvailable) {
         _motionManager.deviceMotionUpdateInterval = 0.1;
         [self.motionManager
+         startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryZVertical
          //startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryCorrectedZVertical
-         startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXMagneticNorthZVertical
+         //startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXMagneticNorthZVertical
+         //startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXTrueNorthZVertical
          toQueue:self.deviceQueue
          withHandler:^(CMDeviceMotion *m, NSError *error)
          {
