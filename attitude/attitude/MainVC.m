@@ -93,6 +93,7 @@ NSOutputStream *mOStream = nil;
 - (void)viewDidLoad
 //---------------------
 {
+    __block long i = 0;
     [super viewDidLoad];
     
     _mode = USE_FUSION;
@@ -114,7 +115,8 @@ NSOutputStream *mOStream = nil;
     _deviceQueue = [[NSOperationQueue alloc] init];
     _motionManager = [CMMotionManager new];
     if (_motionManager.isDeviceMotionAvailable) {
-        _motionManager.deviceMotionUpdateInterval = 0.1;
+        const int FREQ = 10;
+        _motionManager.deviceMotionUpdateInterval = 1.0 / FREQ;
         [self.motionManager
          startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryZVertical
          //startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryCorrectedZVertical
@@ -124,6 +126,7 @@ NSOutputStream *mOStream = nil;
          withHandler:^(CMDeviceMotion *m, NSError *error)
          {
              [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                 i++; 
                  CMQuaternion q = m.attitude.quaternion;
                  float theta_rad = 2.0 * acos(q.w);
                  float theta_deg = theta_rad * (180.0 / M_PI);
@@ -150,23 +153,24 @@ NSOutputStream *mOStream = nil;
                  totAcc.y = userAcc.y + gravity.y;
                  totAcc.z = userAcc.z + gravity.z;
                  
-                 _lbx.text = nsprintf (@"%.2f", qx);
-                 _lby.text = nsprintf (@"%.2f", qy);
-                 _lbz.text = nsprintf (@"%.2f", qz);
-                 _lbAngle.text = nsprintf (@"%.0f", theta_deg);
-                 
-                 _lbUsrAccX.text = nsprintf (@"%.2f", userAcc.x);
-                 _lbUsrAccY.text = nsprintf (@"%.2f", userAcc.y);
-                 _lbUsrAccZ.text = nsprintf (@"%.2f", userAcc.z);
-                 
-                 _lbGravX.text = nsprintf (@"%.2f", gravity.x);
-                 _lbGravY.text = nsprintf (@"%.2f", gravity.y);
-                 _lbGravZ.text = nsprintf (@"%.2f", gravity.z);
-                 
-                 _lbTotX.text = nsprintf (@"%.2f", totAcc.x);
-                 _lbTotY.text = nsprintf (@"%.2f", totAcc.y);
-                 _lbTotZ.text = nsprintf (@"%.2f", totAcc.z);
-                 
+                 if (i % FREQ == 0) {
+                     _lbx.text = nsprintf (@"%.2f", qx);
+                     _lby.text = nsprintf (@"%.2f", qy);
+                     _lbz.text = nsprintf (@"%.2f", qz);
+                     _lbAngle.text = nsprintf (@"%.0f", theta_deg);
+                     
+                     _lbUsrAccX.text = nsprintf (@"%.2f", userAcc.x);
+                     _lbUsrAccY.text = nsprintf (@"%.2f", userAcc.y);
+                     _lbUsrAccZ.text = nsprintf (@"%.2f", userAcc.z);
+                     
+                     _lbGravX.text = nsprintf (@"%.2f", gravity.x);
+                     _lbGravY.text = nsprintf (@"%.2f", gravity.y);
+                     _lbGravZ.text = nsprintf (@"%.2f", gravity.z);
+                     
+                     _lbTotX.text = nsprintf (@"%.2f", totAcc.x);
+                     _lbTotY.text = nsprintf (@"%.2f", totAcc.y);
+                     _lbTotZ.text = nsprintf (@"%.2f", totAcc.z);
+                 }
 
                  float x0,y0,z0;
                  if (_mode == USE_ACCELEROMETER) {
@@ -198,11 +202,14 @@ NSOutputStream *mOStream = nil;
                  yc /= lenc;
                  zc /= lenc;
                  float omega = -acos(z);
-                 // Quaternion from (x,y,z) gravity
-                 _lbXA.text = nsprintf (@"%.2f", xc);
-                 _lbYA.text = nsprintf (@"%.2f", yc);
-                 _lbZA.text = nsprintf (@"%.2f", zc);
-                 _lbAngleA.text = nsprintf (@"%.0f", DEG(omega));
+                 
+                 if (i % FREQ == 0) {
+                     // Quaternion from (x,y,z) gravity
+                     _lbXA.text = nsprintf (@"%.2f", xc);
+                     _lbYA.text = nsprintf (@"%.2f", yc);
+                     _lbZA.text = nsprintf (@"%.2f", zc);
+                     _lbAngleA.text = nsprintf (@"%.0f", DEG(omega));
+                 }
                  
                  if (_isConnected) {
                      NSString *msg;
