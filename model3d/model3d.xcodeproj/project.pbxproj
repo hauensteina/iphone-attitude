@@ -16,6 +16,7 @@
 		AC08C8AB1A6455CC0082AA33 /* ScnVc.xib in Resources */ = {isa = PBXBuildFile; fileRef = AC08C8A91A6455CC0082AA33 /* ScnVc.xib */; };
 		AC08C8B01A648D2D0082AA33 /* iphone_front.png in Resources */ = {isa = PBXBuildFile; fileRef = AC08C8AF1A648D2D0082AA33 /* iphone_front.png */; };
 		AC08C8B21A6491430082AA33 /* iphone_back.png in Resources */ = {isa = PBXBuildFile; fileRef = AC08C8B11A6491430082AA33 /* iphone_back.png */; };
+		AC8E660E1AA7B84300192C4A /* Util.m in Sources */ = {isa = PBXBuildFile; fileRef = AC8E660D1AA7B84300192C4A /* Util.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +45,8 @@
 		AC08C8A91A6455CC0082AA33 /* ScnVc.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ScnVc.xib; sourceTree = "<group>"; };
 		AC08C8AF1A648D2D0082AA33 /* iphone_front.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iphone_front.png; sourceTree = "<group>"; };
 		AC08C8B11A6491430082AA33 /* iphone_back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iphone_back.png; sourceTree = "<group>"; };
+		AC8E660C1AA7B84300192C4A /* Util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Util.h; sourceTree = "<group>"; };
+		AC8E660D1AA7B84300192C4A /* Util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Util.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +98,8 @@
 				AC08C88B1A644FF00082AA33 /* Images.xcassets */,
 				AC08C88D1A644FF00082AA33 /* MainMenu.xib */,
 				AC08C8841A644FF00082AA33 /* Supporting Files */,
+				AC8E660C1AA7B84300192C4A /* Util.h */,
+				AC8E660D1AA7B84300192C4A /* Util.m */,
 			);
 			path = model3d;
 			sourceTree = "<group>";
@@ -230,6 +235,7 @@
 				AC08C8AA1A6455CC0082AA33 /* ScnVc.m in Sources */,
 				AC08C88A1A644FF00082AA33 /* main.m in Sources */,
 				AC08C8881A644FF00082AA33 /* AppDelegate.m in Sources */,
+				AC8E660E1AA7B84300192C4A /* Util.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -416,6 +422,7 @@
 				AC08C8A01A644FF00082AA33 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		AC08C8A11A644FF00082AA33 /* Build configuration list for PBXNativeTarget "model3dTests" */ = {
 			isa = XCConfigurationList;
@@ -424,6 +431,7 @@
 				AC08C8A31A644FF00082AA33 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

@@ -8,6 +8,7 @@
 
 #import "AppDelegate.h"
 #import "ScnVc.h"
+#import "Util.h"
 #import <SceneKit/SceneKit.h>
 #import <GLKit/GLKit.h>
 #import <CoreFoundation/CoreFoundation.h>
@@ -41,6 +42,10 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 @property CFSocketRef socket;
 @property NSInputStream *sockistream;
 @property NSOutputStream *sockostream;
+
+// Data from the sensoplex dump file
+@property NSArray *sensoData;
+
 
 @end // ScnVc
 
@@ -187,6 +192,138 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     _corrAngle = 90.0 - rot;
  //   _corrAngle += 5.0;
 }
+
+//---------------------------------------
+- (IBAction)btnReadSensoFile:(id)sender
+//---------------------------------------
+{
+    NSOpenPanel* openDlg = [NSOpenPanel openPanel];
+    
+    // Enable the selection of files in the dialog.
+    [openDlg setCanChooseFiles:YES];
+    
+    // Disable the selection of directories in the dialog.
+    [openDlg setCanChooseDirectories:NO];
+    
+    // Change "Open" dialog button to "Select"
+    [openDlg setPrompt:@"Select"];
+    
+    // Display the dialog.  If the OK button was pressed,
+    // process the first selected file
+    if ( [openDlg runModal] == NSOKButton )
+    {
+        // Get an array containing the full filenames of all
+        // files and directories selected.
+        NSArray* files = [openDlg URLs];
+        if ([files count]) {
+            NSURL* infile = files[0];
+            [self parseSensoFile:infile];
+        }
+    }
+} // btnReadSensoFile
+
+
+//--------------------------------
+- (IBAction)btnPlay:(id)sender
+//--------------------------------
+// Replay sensoplex quaternions
+{
+    const int FREQ = 100;
+    if (!_sensoData) {
+        [self popup:@"No sensoplex data" title:@"Error"];
+        return;
+    }
+    static int idx;
+    if (sender) {
+        idx = -1;
+    }
+    idx++;
+    if (idx >= [_sensoData count]) { // done
+        [self popup:@"End of Data" title:@"Info"];
+        return;
+    }
+    
+    NSDictionary * frame = _sensoData[idx];
+    float w = [frame[@"quatw"] floatValue];
+    float x = [frame[@"quatx"] floatValue];
+    float y = [frame[@"quaty"] floatValue];
+    float z = [frame[@"quatz"] floatValue];
+    GLKQuaternion glkq;
+    glkq.q[0] = x;
+    glkq.q[1] = y;
+    glkq.q[2] = z;
+    glkq.q[3] = w;
+    SCNQuaternion newOri = glk2SCN(glkq);
+        //SCNQuaternion newOri = SCNVector4Make (x, z, y, theta);
+        //        SCNQuaternion newOri = SCNVector4Make (y, x, z, theta);
+        //SCNQuaternion newOri = SCNQuaternionNorm (SCNVector4Make (y, z, x, theta));
+    _brickNode.rotation = newOri;
+    [self performSelector:@selector(btnPlay:) withObject:nil afterDelay:1.0/FREQ];
+} // btnPlay
+
+
+//-------------------------------------
+- (void) parseSensoFile:(NSURL *)inf
+//-------------------------------------
+// Parse a Sensoplex log into memory
+{
+    NSMutableArray *sensoData = [NSMutableArray new];
+    NSString *path = [inf path];
+    NSArray *lines = [Util readLinesFromFile:path];
+    BOOL headerFound = NO;
+    NSMutableArray *columns = [NSMutableArray new];
+    for (NSString *line in lines) {
+        if (!headerFound) {
+            if (nstrstr(line,@"DateTime")) {
+                headerFound = YES;
+                // Deal with Sensoplex csv quirk
+                NSString *header = [Util replaceRegex:@"DateTime"
+                                            inString:line
+                                          withString:@"Date,Time"];
+                NSArray *cols = [header componentsSeparatedByString:@","];
+                for (NSString *col in cols) {
+                    NSString *column = [trim(col) lowercaseString];
+                    column = [Util replaceRegex:@"[\\s]+" inString:column withString:@"_"];
+                    [columns addObject:trim(column)];
+                }
+            }
+            continue;
+        } // if (!headerFound)
+        if ([trim(line) length] == 0) { continue; }
+        NSArray *words = [line componentsSeparatedByString:@","];
+        NSMutableDictionary *lineDict = [NSMutableDictionary new];
+        int i = -1;
+        for (NSString *word in words) {
+            i++;
+            NSString *col = columns[i];
+            if (nstrstr(col,@"gyro")  // numbers in q16 fixed format
+                || nstrstr(word,@"accel")
+                || nstrstr(word,@"euler"))
+            {
+                double val = [word floatValue];
+                val /= 1<<16;
+                lineDict[col] = @(val);
+            }
+            else if (nstrstr(col,@"quat")) { // numbers in q30 fixed format
+                double val = [word floatValue];
+                val /= 1<<30;
+                lineDict[col] = @(val);
+            }
+            else if (nstrstr(col,@"record")  // integers
+                || nstrstr(word,@"type")
+                || nstrstr(word,@"timestamp"))
+            {
+                int val = [word intValue];
+                lineDict[col] = @(val);
+            }
+            else { // all else is a string
+                lineDict[col] = trim(word);
+            }
+        } // for word in words
+        [sensoData addObject:[lineDict copy] ];
+    } // for line in lines
+    _sensoData = [sensoData copy];
+} // parseSensoFile()
 
 #pragma mark UI stuff
 
@@ -465,7 +602,7 @@ SCNQuaternion SCNQuaternionMultiply (SCNQuaternion q1, SCNQuaternion q2)
 //-----------------------------------------------------------------------
 SCNQuaternion SCNQuaternionInvert (SCNQuaternion q)
 //-----------------------------------------------------------------------
-// Multiply two quaternions. This applies rotation q2 to rotation q1.
+// Find the inverse of q
 {
     GLKQuaternion qglk = GLKQuaternionMakeWithAngleAndAxis (q.w, q.x, q.y, q.z);
     //qglk = GLKQuaternionNormalize (qglk);

@@ -12,11 +12,24 @@
 
 #define DEG(x) ((x)*(180.0/M_PI))
 #define RAD(x) ((x)*(M_PI/180.0))
+#define UNUSED(x) (void)(x)
+#define SIGN(x) ((x)>=0?1:-1)
+//#define abs(x) ((x)>=0?(x):(-(x)))
+#define SQR(x) ((x)*(x))
+#define BOUND(x,a,b) { if ((x) > (b)) (x) = (b); if ((x) < (a)) (x) = (a); }
+#define ROUND(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
+
+// Loop abbreviations
+#define ILOOP(N) for(i=0;i<(N);i++)
+#define JLOOP(N) for(j=0;j<(N);j++)
+#define RLOOP(N) for(r=0;r<(N);r++)
+#define CLOOP(N) for(c=0;c<(N);c++)
+
 
 // A 3D rotation matrix
-typedef struct matrix {
+typedef struct lp_matrix {
     float m[3][3];
-} Matrix;
+} LP_matrix;
 
 
 // Streams for socket communication with server
@@ -79,6 +92,11 @@ NSOutputStream *mOStream = nil;
 // Other
 //-------
 
+@property CMAcceleration userAcc;
+@property CMAcceleration gravity;
+@property float vdisp; // vertical displacement
+@property float vspeed; // vertical speed
+
 @property NSTimer *connectTimeout;
 @property BOOL isConnected;
 @property enum {USE_FUSION, USE_GRAVITY, USE_ACCELEROMETER} mode;
@@ -115,7 +133,7 @@ NSOutputStream *mOStream = nil;
     _deviceQueue = [[NSOperationQueue alloc] init];
     _motionManager = [CMMotionManager new];
     if (_motionManager.isDeviceMotionAvailable) {
-        const int FREQ = 10;
+        const int FREQ = 25;
         _motionManager.deviceMotionUpdateInterval = 1.0 / FREQ;
         [self.motionManager
          startDeviceMotionUpdatesUsingReferenceFrame:CMAttitudeReferenceFrameXArbitraryZVertical
@@ -138,20 +156,43 @@ NSOutputStream *mOStream = nil;
                  //float vlen = sqrt (x*x+y*y+z*z);
                  //x /= vlen; y /= vlen; z /= vlen;
                  
-                 CMAcceleration userAcc;
-                 userAcc.x = -m.userAcceleration.x;
-                 userAcc.y = -m.userAcceleration.y;
-                 userAcc.z = -m.userAcceleration.z;
+                 _userAcc.x = -m.userAcceleration.x;
+                 _userAcc.y = -m.userAcceleration.z;
+                 _userAcc.z = -m.userAcceleration.y;
 
-                 CMAcceleration gravity;
-                 gravity.x = -m.gravity.x;
-                 gravity.y = -m.gravity.z;
-                 gravity.z = -m.gravity.y;
+                 _gravity.x = -m.gravity.x;
+                 _gravity.y = -m.gravity.z;
+                 _gravity.z = -m.gravity.y;
 
                  CMAcceleration totAcc;
-                 totAcc.x = userAcc.x + gravity.x;
-                 totAcc.y = userAcc.y + gravity.y;
-                 totAcc.z = userAcc.z + gravity.z;
+                 totAcc.x = _userAcc.x + _gravity.x;
+                 totAcc.y = _userAcc.y + _gravity.y;
+                 totAcc.z = _userAcc.z + _gravity.z;
+                 
+                 float vertacc = [self getVerticalAcceleration];
+                 
+                 // Speed, slowed by friction
+                 float friction = 0.02;
+                 _vspeed += vertacc;
+                 friction *= SIGN (_vspeed);
+                 if (ABS(friction) > ABS(_vspeed)) { friction = _vspeed; }
+                 _vspeed -= friction;
+                 
+                 // Displacement, with magnet at 0.
+                 float magnet = 0.075;
+                 _vdisp += _vspeed;
+                 magnet *= SIGN (_vdisp);
+                 if (ABS(magnet) > ABS(_vdisp)) { magnet = _vdisp; }
+                 _vdisp -= magnet;
+                 
+                 
+                 //if (ABS(vertacc) > 0.1) {
+                 if (i % 5 == 0) {
+                     NSLog(@"A:%d V:%d S:%d"
+                           ,ROUND(100*vertacc)
+                           ,ROUND(100*_vspeed)
+                           ,ROUND(100*_vdisp));
+                 }
                  
                  if (i % FREQ == 0) {
                      _lbx.text = nsprintf (@"%.2f", qx);
@@ -159,13 +200,13 @@ NSOutputStream *mOStream = nil;
                      _lbz.text = nsprintf (@"%.2f", qz);
                      _lbAngle.text = nsprintf (@"%.0f", theta_deg);
                      
-                     _lbUsrAccX.text = nsprintf (@"%.2f", userAcc.x);
-                     _lbUsrAccY.text = nsprintf (@"%.2f", userAcc.y);
-                     _lbUsrAccZ.text = nsprintf (@"%.2f", userAcc.z);
+                     _lbUsrAccX.text = nsprintf (@"%.2f", _userAcc.x);
+                     _lbUsrAccY.text = nsprintf (@"%.2f", _userAcc.y);
+                     _lbUsrAccZ.text = nsprintf (@"%.2f", _userAcc.z);
                      
-                     _lbGravX.text = nsprintf (@"%.2f", gravity.x);
-                     _lbGravY.text = nsprintf (@"%.2f", gravity.y);
-                     _lbGravZ.text = nsprintf (@"%.2f", gravity.z);
+                     _lbGravX.text = nsprintf (@"%.2f", _gravity.x);
+                     _lbGravY.text = nsprintf (@"%.2f", _gravity.y);
+                     _lbGravZ.text = nsprintf (@"%.2f", _gravity.z);
                      
                      _lbTotX.text = nsprintf (@"%.2f", totAcc.x);
                      _lbTotY.text = nsprintf (@"%.2f", totAcc.y);
@@ -180,9 +221,9 @@ NSOutputStream *mOStream = nil;
                      z0 = totAcc.z;
                  } else {
                      // Motion filtered out, clean attitude
-                     x0 = gravity.x;
-                     y0 = gravity.y;
-                     z0 = gravity.z;
+                     x0 = _gravity.x;
+                     y0 = _gravity.y;
+                     z0 = _gravity.z;
                  }
                  
                  float x,y,z;
@@ -225,6 +266,67 @@ NSOutputStream *mOStream = nil;
     } // if (motion available)
 } // viewDidLoad()
 
+
+//---------------------------------
+- (float) getVerticalAcceleration //@@@
+//---------------------------------
+{
+    float v_acc[3];
+    float v_acc_rot[3];
+
+    // Rotate gravity to (0,1,0)
+    LP_matrix rot = [self rotUp];
+//    // Verify that it is really so
+//    v_acc[0] = _gravity.x;
+//    v_acc[1] = _gravity.y;
+//    v_acc[2] = _gravity.z;
+//    matxvec (&rot, v_acc, v_acc_rot);
+//    NSLog (@"rot grav:%f %f %f", v_acc_rot[0],v_acc_rot[1],v_acc_rot[2]);
+    
+    // Apply gravity direction to external acceleration
+    v_acc[0] = _userAcc.x;
+    v_acc[1] = _userAcc.y;
+    v_acc[2] = _userAcc.z;
+    matxvec (&rot, v_acc, v_acc_rot);
+    return v_acc_rot[1];
+} // getVerticalAcceleration
+
+
+//-------------------
+- (LP_matrix) rotUp
+//-------------------
+{
+    LP_matrix res;
+    LP_matrix zrot;
+    LP_matrix xrot;
+    float x = _gravity.x;
+    float y = _gravity.y;
+    float z = _gravity.z;
+    
+    if (ABS(x) < 0.001) { x = 0.001; }
+    if (ABS(y) < 0.001) { y = 0.001; }
+    float xyLength = sqrt(x*(float)x + y*(float)y);
+    
+    float zAngle = SIGN(x) * (xyLength==0?0:acos(y/xyLength));
+    
+    float vecLength = sqrt(x*(float)x + y*(float)y + z*(float)z);
+    
+    float xAngle = -SIGN(z) * acos (xyLength / vecLength);
+    
+    // Rotation around z axis
+    zrot.m[0][0] = cos(zAngle); zrot.m[0][1] =-sin(zAngle); zrot.m[0][2] = 0;
+    zrot.m[1][0] = sin(zAngle); zrot.m[1][1] = cos(zAngle); zrot.m[1][2] = 0;
+    zrot.m[2][0] = 0;           zrot.m[2][1] = 0;           zrot.m[2][2] = 1;
+    
+    //    xAngle = 0; // No rotation around x
+    // Rotation around x axis
+    xrot.m[0][0] = 1; xrot.m[0][1] = 0;           xrot.m[0][2] = 0;
+    xrot.m[1][0] = 0; xrot.m[1][1] = cos(xAngle); xrot.m[1][2] = -sin(xAngle);
+    xrot.m[2][0] = 0; xrot.m[2][1] = sin(xAngle); xrot.m[2][2] = cos(xAngle);
+    
+    matmul (&xrot,&zrot,&res);
+    return res;
+} // rotUp
 
 #pragma mark Button Callbacks
 
@@ -601,7 +703,7 @@ NSOutputStream *mOStream = nil;
 
 
 //---------------------------------
-CMQuaternion rot2quat (Matrix *p_m)
+CMQuaternion rot2quat (LP_matrix *p_m)
 //---------------------------------
 // Make a quaternion from a rot matrix.
 // This is a little messy for numeric stability.
@@ -643,7 +745,7 @@ CMQuaternion rot2quat (Matrix *p_m)
 
 // Transpose a matrix
 //-----------------------------------------
-void transpose (Matrix *p_m, Matrix *p_res)
+void transpose (LP_matrix *p_m, LP_matrix *p_res)
 //-----------------------------------------
 {
     if(p_m == NULL) return;
@@ -658,13 +760,13 @@ void transpose (Matrix *p_m, Matrix *p_res)
 
 // Multiply two 3x3 matrices
 //-----------------------------------------------------
-void matmul (Matrix *p_m1, Matrix *p_m2, Matrix *p_res)
+void matmul (LP_matrix *p_m1, LP_matrix *p_m2, LP_matrix *p_res)
 //-----------------------------------------------------
 {
     if(p_m1 == NULL || p_m2 == NULL) return;
     
     int r,c;
-    Matrix m2;
+    LP_matrix m2;
     transpose(p_m2,&m2);
     RLOOP(3) {
         CLOOP(3) {
@@ -675,15 +777,30 @@ void matmul (Matrix *p_m1, Matrix *p_m2, Matrix *p_res)
     } // RLOOP
 } // matmul()
 
+// Multiply a vector and a matrix (3D)
+//---------------------------------------------------------
+void matxvec (LP_matrix *p_m, float *p_v, float *p_res)
+//---------------------------------------------------------
+{
+    if(p_m == NULL) return;
+    
+    int r;
+    RLOOP(3) {
+        float *row = p_m->m[r];
+        p_res[r] = (row[0]*p_v[0] + row[1]*p_v[1] + row[2]*p_v[2]);
+    } // RLOOP
+} // matxvec()
+
+
 // Return a pointer to a rotation matrix aligning a vector
 // with the y axis.
 //-----------------------------------------------
-Matrix *alignVector (float x, float y,float z)
+LP_matrix *alignVector (float x, float y,float z)
 //-----------------------------------------------
 {
-    static Matrix res;
-    Matrix zrot;
-    Matrix xrot;
+    static LP_matrix res;
+    LP_matrix zrot;
+    LP_matrix xrot;
     if (ABS(x) < 0.001) { x = 0.001; }
     if (ABS(y) < 0.001) { y = 0.001; }
     float xyLength = sqrt(x*(float)x + y*(float)y);
