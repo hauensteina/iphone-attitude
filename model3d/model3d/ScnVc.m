@@ -245,9 +245,12 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
     
     NSDictionary * frame = _sensoData[idx];
     float w = [frame[@"quatw"] floatValue];
-    float x = [frame[@"quatx"] floatValue];
-    float y = [frame[@"quaty"] floatValue];
-    float z = [frame[@"quatz"] floatValue];
+    
+    // Note how we need to change the axes
+    float z = [frame[@"quatx"] floatValue];
+    float x = [frame[@"quaty"] floatValue];
+    float y = [frame[@"quatz"] floatValue];
+
     GLKQuaternion glkq;
     glkq.q[0] = x;
     glkq.q[1] = y;
