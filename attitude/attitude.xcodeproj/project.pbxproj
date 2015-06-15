@@ -230,7 +230,7 @@
 				TargetAttributes = {
 					ACA43FF51A65C4C2009C30C0 = {
 						CreatedOnToolsVersion = 6.1.1;
-						DevelopmentTeam = TVNL896ZKT;
+						DevelopmentTeam = J26TJ8F6WP;
 					};
 					ACA4400E1A65C4C2009C30C0 = {
 						CreatedOnToolsVersion = 6.1.1;

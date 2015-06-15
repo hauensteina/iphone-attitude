@@ -167,15 +167,18 @@ NSOutputStream *mOStream = nil;
                  totAcc.z = _userAcc.z + _gravity.z;
                  
                  // Call the Madgwick filter
-                 // xzy yxz zyx
+                 // Accelerometer axes are x z y
+                 // Gyro axes are x y z
+                 
 //                 MahonyAHRSupdate (rotationRate.x, rotationRate.y, rotationRate.z
 //                                     ,totAcc.x, totAcc.y, totAcc.z
 //                                     ,magneticField.field.x, magneticField.field.y, magneticField.field.z);
+                 // xyz xzy yxz yzx zxy zyx
                  MadgwickAHRSupdate (rotationRate.x, rotationRate.y, rotationRate.z
-                                     ,totAcc.x, totAcc.y, totAcc.z
+                                     ,totAcc.x, totAcc.z, totAcc.y
                                      ,magneticField.field.x, magneticField.field.y, magneticField.field.z);
 //                 MadgwickAHRSupdateIMU (rotationRate.x, rotationRate.y, rotationRate.z
-//                                        ,totAcc.x, totAcc.y, totAcc.z);
+//                                        ,totAcc.x, totAcc.z, totAcc.y);
 
                  CMQuaternion q;
                  if (_mode == USE_MADGWICK) {
@@ -1481,6 +1484,7 @@ float invSqrt(float number) {
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
 
 float invSqrt(float x) {
+    return (1.0 / sqrt(x));
     float halfx = 0.5f * x;
     float y = x;
     long i = *(long*)&y;
