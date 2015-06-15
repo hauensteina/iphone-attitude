@@ -1077,7 +1077,7 @@ BOOL strmatch (NSString *str, NSString *pat)
 
 //#define sampleFreq	512.0f		// sample frequency in Hz
 //#define betaDef		0.1f		// 2 * proportional gain
-#define betaDef		0.0001f		// 2 * proportional gain
+#define betaDef		0.5f		// 2 * proportional gain
 volatile float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;	// quaternion of sensor frame relative to auxiliary frame
 
 //---------------------------------------------------------------------------------------------------
@@ -1462,6 +1462,20 @@ void MahonyAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float
     q3 *= recipNorm;
 }
 
+float invSqrt(float number) {
+    union {
+        float f;
+        int32_t i;
+    } y;
+    
+    y.f = number;
+    y.i = 0x5f375a86 - (y.i >> 1);
+    y.f = y.f * ( 1.5f - ( number * 0.5f * y.f * y.f ) );
+    return y.f;
+}
+
+#if 0
+
 //---------------------------------------------------------------------------------------------------
 // Fast inverse square-root
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
@@ -1476,9 +1490,7 @@ float invSqrt(float x) {
     return y;
 }
 
-
-
-
+#endif
 
 @end
 
